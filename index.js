@@ -40,7 +40,7 @@ let lastProcessedAnchor = '';
 async function fetchAndSendMessages() {
   try {
     const aoMessages = await results({
-      process: 'LtqKYKWYPKLy2vjoe4gX_j1PbAnSr7Z9PZntlxXOxJk',
+      process: 'xxxxxxxxxxxxxxxxx', //your_ao_id
       sort: 'DESC',
       limit: 5, 
     });
