@@ -1,11 +1,9 @@
-const { results } = require('@permaweb/aoconnect');
+const { results, createDataItemSigner, message } = require('@permaweb/aoconnect');
 const { Client, GatewayIntentBits } = require('discord.js');
 const WebSocket = require('ws');
 const { readFileSync } = require('node:fs');
 
-
 const wallet = JSON.parse(readFileSync('/root/.aos.json').toString());
-
 
 const client = new Client({
   intents: [
@@ -15,77 +13,78 @@ const client = new Client({
   ],
 });
 
-//DC_bot_token
-const DISCORD_BOT_TOKEN = 'abcdefg';
+const DISCORD_BOT_TOKEN = 'MTI0NTI4MDg5MTc0ODQ4NzIzMA.G6SBkk.XnEJ-pXParmUIvdKE3-iMFyQgkwRq5jBKpDH4s';
 
-//DC_channel_id
-const DISCORD_CHANNEL_ID = '12345';
-
+const DISCORD_CHANNEL_ID = '1245282465615052813';
 
 client.login(DISCORD_BOT_TOKEN);
-
 
 client.once('ready', () => {
   console.log('Discord bot is ready');
 });
 
-const wss = new WebSocket.Server({ port: 1234 }, () => {
-  console.log('WebSocket server is running on port 1234');
-});
-
-
-let lastProcessedAnchor = '';
-
+let lastProcessedCursor = '';
 
 async function fetchAndSendMessages() {
   try {
     const aoMessages = await results({
-      process: 'xxxxxxxxxxxxxxxxx', //your_ao_id
+      process: 'Ektl_103Tgt7geZ5aIZQFhZGpzxo4RGA0NsW42vH0L0',
       sort: 'DESC',
-      limit: 5, 
+      limit: 1,
     });
 
-
     for (const element of aoMessages.edges.reverse()) {
-      const messages = element.node.Messages;
-      const filteredMessages = messages.filter(msg => msg.Tags.some(tag => tag.name === 'Action' && tag.value === 'Say'));
+      const { cursor, node } = element;
+      const { data } = node.Output;
+      const dataString = typeof data === 'string' ? data : data.toString();
 
-      for (const message of filteredMessages) {
-        const anchor = message.Anchor;
+      //console.log(data)
 
-
-        if (anchor > lastProcessedAnchor) {
-          const eventTag = message.Tags.find(tag => tag.name === 'Event');
-          const eventDescription = eventTag ? eventTag.value : 'Message in CoinssporRoom';
-          const formattedMessage = `${message.Target}: ${message.Data}`;
-
+      // const dataString = data.toString();
+      if (cursor > lastProcessedCursor && dataString.includes('Getting-Started')) {
+        const regex = /\[\x1B\[31m(.*?)\x1B\[.*?@\x1B\[34mGetting-Started\x1B\[0m\]> \x1B\[32m(.*?)\x1B\[0m/;
+        const match = dataString.match(regex);
+        //console.log(match)
+        if (match) {
+          const username = match[1];
+          const messageContent = match[2];
+          const formattedMessage = `${username}: ${messageContent}`;
 
           const channel = client.channels.cache.get(DISCORD_CHANNEL_ID);
           if (channel) {
             await channel.send(formattedMessage);
-            console.log('Send msg to discord:', formattedMessage);
+            console.log('Send Msg To Discord:', formattedMessage);
           }
 
-
-          lastProcessedAnchor = anchor;
+          lastProcessedCursor = cursor;
         }
       }
     }
   } catch (error) {
-    console.error('Send msg to discord fail：', error);
+    console.error('Send Msg To Discord Fail:', error);
   }
 }
 
-wss.on('connection', (ws) => {
-  console.log('WebSocket client connected');
-
-  ws.on('message', async (message) => {
-    console.log('Received message:', message);
-    await fetchAndSendMessages();
-  });
-});
-
 setInterval(fetchAndSendMessages, 5000);
 
-console.log('Start listening AOS...');
+client.on('messageCreate', async (msg) => {
+  if (msg.channel.id === DISCORD_CHANNEL_ID && !msg.author.bot) {
+    try {
+      await message({
+        process: 'Ektl_103Tgt7geZ5aIZQFhZGpzxo4RGA0NsW42vH0L0',
+        tags: [
+          { name: 'Action', value: 'ReceiveDiscord' },
+          { name: 'Data', value: msg.content },
+          { name: 'Event', value: msg.author.username },
+        ],
+        signer: createDataItemSigner(wallet),
+        data: msg.content,
+      });
+      console.log('Send Msg To AOS:', msg.content);
+    } catch (error) {
+      console.error('Send Msg To AOS Fail:', error);
+    }
+  }
+});
 
+console.log('Listening....');
