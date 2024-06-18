@@ -13,9 +13,9 @@ const client = new Client({
   ],
 });
 
-const DISCORD_BOT_TOKEN = 'MTI0NTI4MDg5MTc0ODQ4NzIzMA.G6SBkk.XnEJ-pXParmUIvdKE3-iMFyQgkwRq5jBKpDH4s';
+const DISCORD_BOT_TOKEN = 'xxxxxxxxx';
 
-const DISCORD_CHANNEL_ID = '1245282465615052813';
+const DISCORD_CHANNEL_ID = 'xxxxxxxxxxxxx';
 
 client.login(DISCORD_BOT_TOKEN);
 
